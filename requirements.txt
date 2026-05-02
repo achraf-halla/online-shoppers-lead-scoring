@@ -5,7 +5,5 @@ seaborn>=0.13
 scikit-learn>=1.4
 ucimlrepo>=0.0.7
 jupyterlab>=4.0
-
-# Phase 2 additions (uncomment when needed)
-# lightgbm>=4.0
-# shap>=0.44
+lightgbm>=4.0
+shap>=0.44
