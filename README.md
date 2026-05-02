@@ -86,13 +86,38 @@ The held-out test set is touched once at the end. CV happens on train.
 
 ## Results
 
-*To be filled in after running `notebooks/02_modeling.ipynb` locally.*
-The results section should at minimum cover:
+Held-out test set: 2,466 sessions, 15.5% positive class.
 
-- PR-AUC and ROC-AUC for both models, with and without PageValues.
-- Top-10% precision (the "if sales calls the top decile" number).
-- Brier score before and after isotonic calibration.
-- The three highest-impact features per SHAP summary.
+| Model                          | PR-AUC | ROC-AUC | Brier | prec@top10% |
+|--------------------------------|--------|---------|-------|-------------|
+| Logistic regression (with PV)  | 0.622  | 0.893   | 0.124 | 0.707       |
+| Logistic regression (no PV)    | 0.321  | 0.735   | 0.215 | 0.382       |
+| **LightGBM (with PV)**         | **0.743** | **0.932** | **0.094** | **0.781** |
+| LightGBM (no PV)               | 0.365  | 0.776   | 0.177 | 0.423       |
+
+### Key findings
+
+- **PageValues drives most of the apparent performance.** Removing it
+  nearly halves PR-AUC for both models. PageValues is partly computed
+  from the conversion outcome, so the headline ~0.93 ROC-AUC commonly
+  reported on this dataset is largely a leakage artefact. Without it,
+  LightGBM still produces useful rankings (PR-AUC 0.37, top-decile lift
+  2.7×) — the gap quantifies the value of a feature that wouldn't be
+  available at real-time scoring time.
+- **Top decile.** Calling the top 10% of LightGBM-ranked sessions
+  reaches 78% precision against a 15.5% base rate (lift of 5×) and
+  captures half of all converters. The top 30% captures 89% of
+  converters at 46% precision.
+- **Calibration is a trade-off.** Isotonic regression improves Brier
+  score 23% (0.094 → 0.072) but costs ~4 pts of top-10% precision.
+  Use isotonic when downstream needs probabilities (expected revenue,
+  confidence thresholds); use raw scores when downstream only needs a
+  ranking.
+- **Top drivers (SHAP, no-PageValues model).** ExitRates dominates
+  (≈2× the next feature), followed by Month and ProductRelated_Duration.
+  Behavioural features (rates, durations) outweigh context features
+  (Browser, Region, OS) by an order of magnitude. Month picks up a clear
+  November pre-holiday spike.
 
 ## License
 
