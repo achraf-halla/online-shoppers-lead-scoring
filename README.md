@@ -39,10 +39,12 @@ online-shoppers-lead-scoring/
 │   ├── raw/              # downloaded CSV (gitignored)
 │   └── processed/        # cleaned/feature-engineered data (gitignored)
 ├── notebooks/
-│   └── 01_eda.ipynb      # exploratory analysis
+│   ├── 01_eda.ipynb      # exploratory analysis
+│   └── 02_modeling.ipynb # baseline + LightGBM + calibration + SHAP
 ├── src/
 │   ├── data.py           # dataset download + load helpers
-│   └── features.py       # feature engineering (Phase 2)
+│   ├── features.py       # feature recipes + LR pipeline factory
+│   └── evaluation.py     # metrics, calibration, lift / gains plots
 ├── reports/
 │   └── figures/          # plots saved from notebooks
 ├── requirements.txt
@@ -62,16 +64,35 @@ jupyter lab notebooks/01_eda.ipynb
 ## Roadmap
 
 - [x] Repo scaffold, dataset loader, EDA notebook
-- [ ] Baseline logistic regression with class weighting
-- [ ] Gradient boosting (LightGBM) with stratified CV
-- [ ] Probability calibration (Platt / isotonic) and reliability diagrams
-- [ ] SHAP-based feature attribution and per-prediction explanations
-- [ ] Top-decile precision and lift analysis (the metrics a marketing team
-      actually cares about)
+- [x] Baseline logistic regression with class weighting
+- [x] Gradient boosting (LightGBM) with stratified CV
+- [x] Probability calibration (isotonic) and reliability diagrams
+- [x] SHAP-based feature attribution and per-prediction explanations
+- [x] Top-decile precision and cumulative gains analysis
+- [ ] Hyperparameter search (Optuna) — left as a follow-up
+- [ ] Per-segment evaluation (e.g. by `VisitorType`, `Month`)
+
+## Approach
+
+Two parallel models, each trained twice — with and without `PageValues`,
+the feature most likely to leak conversion signal:
+
+| Model | Preprocessing | Why |
+| --- | --- | --- |
+| Logistic regression | StandardScaler + OneHotEncoder, `class_weight="balanced"` | Linear, interpretable lower bound |
+| LightGBM | Native categoricals, `is_unbalance=True`, isotonic calibration on a held-out validation slice | Handles mixed types and correlated features cleanly; SHAP-explainable |
+
+The held-out test set is touched once at the end. CV happens on train.
 
 ## Results
 
-*To be filled in after Phase 2.*
+*To be filled in after running `notebooks/02_modeling.ipynb` locally.*
+The results section should at minimum cover:
+
+- PR-AUC and ROC-AUC for both models, with and without PageValues.
+- Top-10% precision (the "if sales calls the top decile" number).
+- Brier score before and after isotonic calibration.
+- The three highest-impact features per SHAP summary.
 
 ## License
 
